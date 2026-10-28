@@ -169,6 +169,17 @@
   }
   .again:hover{background:rgba(255,209,102,.2);transform:translateY(-1px)}
 
+  /* bouton son */
+  .sound{
+    position:fixed;top:14px;right:14px;z-index:60;
+    width:44px;height:44px;border-radius:50%;cursor:pointer;
+    border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);
+    color:#cfd6e6;font-size:19px;line-height:1;display:grid;place-items:center;
+    opacity:.65;transition:.2s;backdrop-filter:blur(6px);
+  }
+  .sound:hover{opacity:1;background:rgba(255,255,255,.12)}
+  .sound.off{color:#ff6b8a;border-color:rgba(255,45,85,.35)}
+
   @keyframes shake{
     0%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}
     50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-2px)}100%{transform:translate(0,0)}
@@ -181,6 +192,8 @@
 </head>
 <body>
 <div id="stage">
+
+  <button id="sound" class="sound" aria-label="Couper le son" title="Son">🔊</button>
 
   <!-- 1. Le cadeau -->
   <section id="scene-gift" class="scene active">
@@ -259,16 +272,20 @@
 
   /* ---------- petit moteur audio (WebAudio, sans fichier) ---------- */
   var actx = null;
+  var muted = false;
+  var hacking = false;
+
   function audio() {
     if (!actx) {
       var C = window.AudioContext || window.webkitAudioContext;
       if (!C) return null;
-      actx = new C();
+      try { actx = new C(); } catch (e) { return null; }
     }
     if (actx.state === "suspended") actx.resume();
     return actx;
   }
   function beep(freq, dur, type, gain) {
+    if (muted) return;
     var a = audio(); if (!a) return;
     var osc = a.createOscillator(), g = a.createGain();
     osc.type = type || "square";
@@ -277,11 +294,75 @@
     osc.connect(g); g.connect(a.destination);
     var t = a.currentTime;
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(gain == null ? 0.05 : gain, t + 0.01);
+    g.gain.linearRampToValueAtTime(gain == null ? 0.08 : gain, t + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
-  function blip() { beep(1400 + Math.random() * 900, 0.02, "square", 0.012); }
+  function blip() { beep(1400 + Math.random() * 900, 0.025, "square", 0.025); }
+
+  /* --- sirène d'alarme (deux oscillateurs + filtre) --- */
+  var siren = null, sirenTimer = null;
+
+  function startSiren() {
+    if (muted) return;
+    var a = audio(); if (!a || siren) return;
+
+    var osc1 = a.createOscillator(), osc2 = a.createOscillator();
+    var filt = a.createBiquadFilter(), gain = a.createGain();
+
+    osc1.type = "sawtooth"; osc1.frequency.value = 620;
+    osc2.type = "square";   osc2.frequency.value = 930;
+    filt.type = "lowpass";  filt.frequency.value = 2000;
+    gain.gain.value = 0;
+
+    osc1.connect(filt); osc2.connect(filt);
+    filt.connect(gain); gain.connect(a.destination);
+    osc1.start(); osc2.start();
+
+    gain.gain.linearRampToValueAtTime(0.11, a.currentTime + 0.5);
+
+    var hi = true;
+    sirenTimer = setInterval(function () {
+      if (!siren) return;
+      var t = a.currentTime, base = hi ? 780 : 500;
+      osc1.frequency.setTargetAtTime(base, t, 0.05);
+      osc2.frequency.setTargetAtTime(base * 1.5, t, 0.05);
+      hi = !hi;
+    }, 430);
+
+    siren = { osc1: osc1, osc2: osc2, gain: gain };
+  }
+
+  function stopSiren() {
+    if (sirenTimer) { clearInterval(sirenTimer); sirenTimer = null; }
+    if (!siren) return;
+    var n = siren; siren = null;
+    var a = actx; if (!a) return;
+    var t = a.currentTime;
+    try {
+      n.gain.gain.cancelScheduledValues(t);
+      n.gain.gain.setValueAtTime(n.gain.gain.value, t);
+      n.gain.gain.linearRampToValueAtTime(0, t + 0.3);
+    } catch (e) {}
+    later(function () {
+      try { n.osc1.stop(); n.osc2.stop(); } catch (e) {}
+    }, 380);
+  }
+
+  /* --- bouton son --- */
+  var soundBtn = document.getElementById("sound");
+  function paintSound() {
+    soundBtn.textContent = muted ? "🔇" : "🔊";
+    soundBtn.classList.toggle("off", muted);
+    soundBtn.setAttribute("aria-label", muted ? "Activer le son" : "Couper le son");
+  }
+  soundBtn.addEventListener("click", function () {
+    muted = !muted;
+    paintSound();
+    if (muted) stopSiren();
+    else { audio(); beep(880, 0.08, "triangle", 0.06); if (hacking) startSiren(); }
+  });
+  paintSound();
 
   /* ---------- 1. ouverture du cadeau ---------- */
   giftBtn.addEventListener("click", function () {
@@ -371,6 +452,8 @@
   function startHack() {
     show("hack");
     scenes.hack.classList.add("alarm");
+    hacking = true;
+    startSiren();
 
     var total = 30;
     var left = total;
@@ -384,8 +467,10 @@
       progEl.style.width = ((total - left) / total * 100).toFixed(1) + "%";
 
       if (left <= 10) clockEl.classList.add("crit");
-      if (left % 8 === 0 || left <= 5) beep(300, 0.07, "sawtooth", 0.035);
-      else if (left % 3 === 0) beep(900, 0.03, "square", 0.012);
+      if (left % 8 === 0 || left <= 5) beep(300, 0.09, "sawtooth", 0.05);
+      else if (left % 3 === 0) beep(900, 0.035, "square", 0.02);
+
+      if (left <= 10 && navigator.vibrate) navigator.vibrate(90);
 
       if (Math.random() < 0.55) {
         var f = FILE_POOL[Math.floor(Math.random() * FILE_POOL.length)];
@@ -398,6 +483,9 @@
       if (left <= 0) {
         clearInterval(tick);
         scenes.hack.classList.remove("alarm");
+        hacking = false;
+        stopSiren();
+        if (navigator.vibrate) navigator.vibrate([200, 90, 220]);
         beep(520, 0.1, "triangle", 0.06);
         later(function () { beep(780, 0.16, "triangle", 0.05); }, 120);
         later(function () { show("end"); }, 700);
@@ -408,6 +496,8 @@
   /* ---------- 4. recommencer ---------- */
   againBtn.addEventListener("click", function () {
     clearTimers();
+    stopSiren();
+    hacking = false;
     filesEl.innerHTML = "";
     clockEl.textContent = "00:30";
     clockEl.classList.remove("crit");
