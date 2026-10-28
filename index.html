@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un cadeau pour toi 🎁</title>
+<meta name="description" content="Un petit cadeau... clique pour l'ouvrir.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#05070d">
+<style>
+  :root{
+    --bg:#05070d;
+    --gold:#ffd166;
+    --gold-2:#f4a261;
+    --red:#ff2d55;
+    --green:#39ff88;
+    --mono:"Cascadia Mono","Consolas","SF Mono",ui-monospace,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(1200px 800px at 50% 30%,#0d1424 0%,var(--bg) 60%,#000 100%);
+    color:#e8eaf2;font-family:var(--sans);overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #stage{position:fixed;inset:0;display:grid;place-items:center;padding:24px}
+
+  .scene{
+    position:absolute;inset:0;display:grid;place-items:center;gap:18px;
+    padding:24px;text-align:center;
+    opacity:0;visibility:hidden;transform:scale(.98);
+    transition:opacity .45s ease,transform .45s ease,visibility .45s;
+  }
+  .scene.active{opacity:1;visibility:visible;transform:scale(1)}
+
+  /* ---------- Scène 1 : le cadeau ---------- */
+  #scene-gift{grid-template-rows:auto auto auto}
+  .title{
+    font-size:clamp(26px,6vw,44px);font-weight:700;letter-spacing:.5px;
+    background:linear-gradient(180deg,#fff,#ffd9a0 60%,#f4a261);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 40px rgba(255,209,102,.15);
+  }
+  .hint{color:#8b93a7;font-size:clamp(13px,3.4vw,16px);letter-spacing:.4px}
+
+  .gift{
+    position:relative;width:190px;height:190px;border:0;background:none;cursor:pointer;
+    display:block;filter:drop-shadow(0 24px 40px rgba(255,180,80,.18));
+    animation:bob 2.6s ease-in-out infinite;
+    transition:transform .25s ease;
+  }
+  .gift:hover{transform:scale(1.05)}
+  .gift:active{transform:scale(.97)}
+  @keyframes bob{0%,100%{translate:0 0}50%{translate:0 -8px}}
+
+  .gift .box{
+    position:absolute;left:25px;bottom:18px;width:140px;height:104px;border-radius:10px;
+    background:linear-gradient(160deg,#ff6b6b,#d90429 45%,#8d0801);
+    box-shadow:inset 0 -18px 30px rgba(0,0,0,.35),inset 0 12px 24px rgba(255,255,255,.18);
+    transition:transform .5s cubic-bezier(.2,.8,.3,1.4);
+  }
+  .gift .lid{
+    position:absolute;left:15px;bottom:118px;width:160px;height:44px;border-radius:8px;
+    background:linear-gradient(160deg,#ff8f8f,#e63946 50%,#9d0208);
+    box-shadow:0 8px 18px rgba(0,0,0,.45),inset 0 8px 16px rgba(255,255,255,.22);
+    transform-origin:50% 100%;
+    transition:transform .55s cubic-bezier(.2,.8,.3,1.5),opacity .5s;
+    z-index:3;
+  }
+  .gift .v{position:absolute;left:83px;bottom:18px;width:24px;height:104px;
+    background:linear-gradient(180deg,var(--gold),var(--gold-2));border-radius:3px;z-index:2}
+  .gift .h{position:absolute;left:15px;bottom:118px;width:160px;height:44px;
+    background:linear-gradient(180deg,var(--gold),var(--gold-2));z-index:4;opacity:0;border-radius:7px}
+  .gift .bow{position:absolute;left:50%;bottom:158px;translate:-50% 0;width:70px;height:34px;z-index:5}
+  .gift .bow::before,.gift .bow::after{
+    content:"";position:absolute;width:34px;height:30px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+    background:radial-gradient(circle at 35% 30%,#ffe29a,#f4a261 70%,#c47a35);
+    top:0;box-shadow:inset 0 -4px 8px rgba(0,0,0,.25);
+  }
+  .gift .bow::before{left:0;transform:rotate(-18deg)}
+  .gift .bow::after{right:0;transform:rotate(18deg)}
+
+  .gift.opened .lid{transform:translate(-70px,-110px) rotate(-32deg);opacity:0}
+  .gift.opened .bow{transform:translate(-50%,-120px) rotate(-25deg);opacity:0;transition:all .5s ease}
+  .gift.opened .box{transform:translateY(6px) scaleY(.95)}
+  .gift.opened{animation:none}
+
+  /* ---------- Scène 2 : faux terminal ---------- */
+  #scene-term{align-content:center}
+  .win{
+    width:min(720px,94vw);border-radius:12px;overflow:hidden;
+    border:1px solid #1c2333;background:#080b12;
+    box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03);
+    text-align:left;
+  }
+  .win-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#0f1420;border-bottom:1px solid #1c2333}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+  .win-title{margin-left:8px;font-family:var(--mono);font-size:12px;color:#6b7590}
+  .term{
+    font-family:var(--mono);font-size:clamp(11px,2.6vw,13.5px);line-height:1.65;
+    color:#9ef7c1;padding:16px 18px;min-height:52vh;max-height:62vh;overflow:hidden;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .term .ok{color:var(--green)}
+  .term .warn{color:#ffb020}
+  .term .bad{color:var(--red)}
+  .term .dim{color:#5c677d}
+  .cursor{display:inline-block;width:8px;height:1em;background:var(--green);
+    vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ---------- Scène 3 : piraté ---------- */
+  #scene-hack{
+    background:radial-gradient(circle at 50% 40%,rgba(255,45,85,.16),transparent 60%),#05070d;
+    align-content:center;
+  }
+  #scene-hack.alarm #stage{animation:shake .28s linear infinite}
+  .glitch-wrap{position:relative;display:grid;gap:6px;justify-items:center}
+  .hack-title{
+    position:relative;font-size:clamp(44px,13vw,120px);font-weight:900;letter-spacing:.08em;
+    color:#fff;text-shadow:0 0 24px rgba(255,45,85,.55);
+  }
+  .hack-title::before,.hack-title::after{
+    content:attr(data-text);position:absolute;inset:0;
+  }
+  .hack-title::before{color:#ff2d55;transform:translate(-3px,0);clip-path:inset(0 0 55% 0);animation:gl1 2.4s infinite steps(2)}
+  .hack-title::after{color:#00e5ff;transform:translate(3px,0);clip-path:inset(58% 0 0 0);animation:gl2 2.1s infinite steps(2)}
+  @keyframes gl1{0%,90%,100%{transform:translate(-3px,0)}93%{transform:translate(-9px,2px)}96%{transform:translate(5px,-2px)}}
+  @keyframes gl2{0%,88%,100%{transform:translate(3px,0)}91%{transform:translate(10px,-1px)}95%{transform:translate(-6px,2px)}}
+
+  .hack-sub{
+    font-family:var(--mono);font-size:clamp(13px,3.6vw,18px);letter-spacing:.34em;
+    color:var(--red);text-transform:uppercase;
+  }
+  .count{display:grid;gap:8px;margin-top:14px}
+  .count span{font-size:clamp(12px,3.2vw,15px);color:#cfd6e6;letter-spacing:.06em}
+  .count strong{
+    font-family:var(--mono);font-size:clamp(52px,15vw,96px);font-weight:700;
+    color:#fff;text-shadow:0 0 30px rgba(255,45,85,.7);font-variant-numeric:tabular-nums;
+  }
+  .count strong.crit{color:var(--red);animation:pulse .5s ease-in-out infinite alternate}
+  @keyframes pulse{to{transform:scale(1.06);opacity:.85}}
+
+  .bar{width:min(520px,86vw);height:8px;border-radius:99px;background:#151b28;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff2d55,#ff8a5c);box-shadow:0 0 18px #ff2d55;transition:width .95s linear}
+
+  .files{
+    list-style:none;font-family:var(--mono);font-size:clamp(10px,2.6vw,12px);color:#7c8699;
+    height:84px;overflow:hidden;width:min(520px,86vw);margin-top:6px;
+    mask-image:linear-gradient(180deg,transparent,#000 25%,#000 75%,transparent);
+    -webkit-mask-image:linear-gradient(180deg,transparent,#000 25%,#000 75%,transparent);
+  }
+  .files li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:fadeIn .25s ease}
+  .files li b{color:#ff5c7a}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}}
+
+  /* ---------- Scène 4 : la blague ---------- */
+  #scene-end{gap:14px}
+  .end-emoji{font-size:clamp(56px,16vw,90px);animation:pop .6s cubic-bezier(.2,.8,.3,1.6)}
+  @keyframes pop{from{transform:scale(.4);opacity:0}}
+  #scene-end h2{font-size:clamp(22px,6vw,34px)}
+  #scene-end p{color:#9aa3b8;line-height:1.7;font-size:clamp(13px,3.4vw,16px)}
+  .again{
+    margin-top:10px;padding:13px 26px;border-radius:99px;border:1px solid rgba(255,209,102,.45);
+    background:rgba(255,209,102,.1);color:var(--gold);font:inherit;font-weight:600;cursor:pointer;
+    transition:.2s;
+  }
+  .again:hover{background:rgba(255,209,102,.2);transform:translateY(-1px)}
+
+  @keyframes shake{
+    0%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}
+    50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-2px)}100%{transform:translate(0,0)}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. Le cadeau -->
+  <section id="scene-gift" class="scene active">
+    <h1 class="title">Un cadeau pour toi</h1>
+    <p class="hint">Clique sur le cadeau pour l'ouvrir</p>
+    <button id="gift" class="gift" aria-label="Ouvrir le cadeau">
+      <span class="box"></span>
+      <span class="v"></span>
+      <span class="h"></span>
+      <span class="lid"></span>
+      <span class="bow"></span>
+    </button>
+  </section>
+
+  <!-- 2. Faux terminal -->
+  <section id="scene-term" class="scene">
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-title">root@cazares:~ — bash</span>
+      </div>
+      <pre id="term" class="term"></pre>
+    </div>
+  </section>
+
+  <!-- 3. Faux piratage -->
+  <section id="scene-hack" class="scene">
+    <div class="glitch-wrap">
+      <h2 class="hack-title" data-text="CAZARES">CAZARES</h2>
+      <p class="hack-sub">Vous avez été piraté</p>
+    </div>
+    <div class="count">
+      <span>Suppression de vos données dans</span>
+      <strong id="clock">00:30</strong>
+    </div>
+    <div class="bar"><i id="prog"></i></div>
+    <ul id="files" class="files"></ul>
+  </section>
+
+  <!-- 4. La révélation -->
+  <section id="scene-end" class="scene">
+    <div class="end-emoji">🎁</div>
+    <h2>C'était une blague !</h2>
+    <p>Rien n'a été piraté, rien n'a été supprimé.<br>Juste un cadeau pour toi.</p>
+    <button id="again" class="again">Recommencer</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var scenes = {
+    gift: document.getElementById("scene-gift"),
+    term: document.getElementById("scene-term"),
+    hack: document.getElementById("scene-hack"),
+    end:  document.getElementById("scene-end")
+  };
+  var giftBtn = document.getElementById("gift");
+  var termEl  = document.getElementById("term");
+  var clockEl = document.getElementById("clock");
+  var progEl  = document.getElementById("prog");
+  var filesEl = document.getElementById("files");
+  var againBtn= document.getElementById("again");
+
+  var timers = [];
+  function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+  function show(name) {
+    Object.keys(scenes).forEach(function (k) {
+      scenes[k].classList.toggle("active", k === name);
+    });
+  }
+
+  /* ---------- petit moteur audio (WebAudio, sans fichier) ---------- */
+  var actx = null;
+  function audio() {
+    if (!actx) {
+      var C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      actx = new C();
+    }
+    if (actx.state === "suspended") actx.resume();
+    return actx;
+  }
+  function beep(freq, dur, type, gain) {
+    var a = audio(); if (!a) return;
+    var osc = a.createOscillator(), g = a.createGain();
+    osc.type = type || "square";
+    osc.frequency.value = freq;
+    g.gain.value = 0;
+    osc.connect(g); g.connect(a.destination);
+    var t = a.currentTime;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain == null ? 0.05 : gain, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.start(t); osc.stop(t + dur + 0.02);
+  }
+  function blip() { beep(1400 + Math.random() * 900, 0.02, "square", 0.012); }
+
+  /* ---------- 1. ouverture du cadeau ---------- */
+  giftBtn.addEventListener("click", function () {
+    audio();
+    beep(660, 0.12, "triangle", 0.06);
+    beep(990, 0.18, "triangle", 0.04);
+    giftBtn.classList.add("opened");
+    later(function () { show("term"); runTerminal(); }, 650);
+  }, { once: true });
+
+  /* ---------- 2. faux terminal ---------- */
+  var LINES = [
+    ["$ ", "ssh root@185.220.101.42", ""],
+    ["[ ok ] ", "connexion établie · latence 12 ms", "ok"],
+    ["[ ok ] ", "session chiffrée (AES-256-GCM)", "ok"],
+    ["$ ", "nmap -sS 192.168.1.0/24", ""],
+    ["[ .. ] ", "14 appareils détectés sur le réseau", "dim"],
+    ["$ ", "hydra -l cazares -P wordlist.txt ssh://…", ""],
+    ["[ !! ] ", "3 482 tentatives · mot de passe trouvé 😬", "warn"],
+    ["$ ", "sudo -i", ""],
+    ["[ ok ] ", "élévation de privilèges … RÉUSSIE", "ok"],
+    ["$ ", "mount /dev/sda2 /mnt/data", ""],
+    ["[ ok ] ", "accès à C:\\Users\\CAZARES … accordé", "ok"],
+    ["[ .. ] ", "indexation : 12 873 fichiers · 41,2 Go", "dim"],
+    ["$ ", "encrypt --algo aes-256 --all", ""],
+    ["[ !! ] ", "chiffrement en cours … 100 %", "bad"],
+    ["[ !! ] ", "sauvegardes distantes supprimées", "bad"],
+    ["[ .. ] ", "installez notre logiciel pour récupérer vos données", "warn"],
+    ["$ ", "echo \"bonne chance\"", ""],
+    ["[ ok ] ", "tout est prêt. Bonjour, CAZARES.", "ok"]
+  ];
+
+  function typeLine(prefix, text, cls, done) {
+    var row = document.createElement("span");
+    var p = document.createElement("span");
+    p.className = "dim";
+    p.textContent = prefix;
+    var t = document.createElement("span");
+    if (cls) t.className = cls;
+    row.appendChild(p); row.appendChild(t);
+    termEl.appendChild(row);
+
+    var i = 0;
+    (function step() {
+      if (i >= text.length) {
+        termEl.appendChild(document.createTextNode("\n"));
+        done();
+        return;
+      }
+      t.textContent += text.charAt(i++);
+      if (i % 2 === 0) blip();
+      termEl.scrollTop = termEl.scrollHeight;
+      later(step, 14 + Math.random() * 20);
+    })();
+  }
+
+  function runTerminal() {
+    termEl.textContent = "";
+    var idx = 0;
+    (function next() {
+      if (idx >= LINES.length) {
+        later(function () { startHack(); }, 550);
+        return;
+      }
+      var l = LINES[idx++];
+      var delay = l[0] === "$ " ? 130 : 90;
+      typeLine(l[0], l[1], l[2], function () { later(next, delay); });
+    })();
+  }
+
+  /* ---------- 3. écran piraté ---------- */
+  var FILE_POOL = [
+    "Photos/anniversaire_2023.zip",
+    "Documents/impots_2025.pdf",
+    "Documents/contrat_de_travail.docx",
+    "Images/vacances_ete.jpg",
+    "Bureau/mots_de_passe.txt",
+    "Vidéos/mariage_final.mp4",
+    "Téléchargements/facture_EDF.pdf",
+    "Musique/playlist_2024.mp3",
+    "Projets/site_perso/index.html",
+    "Documents/CV_CAZARES.pdf"
+  ];
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function startHack() {
+    show("hack");
+    scenes.hack.classList.add("alarm");
+
+    var total = 30;
+    var left = total;
+    clockEl.textContent = "00:" + pad(left);
+    progEl.style.width = "0%";
+    filesEl.innerHTML = "";
+
+    var tick = setInterval(function () {
+      left--;
+      clockEl.textContent = "00:" + pad(Math.max(left, 0));
+      progEl.style.width = ((total - left) / total * 100).toFixed(1) + "%";
+
+      if (left <= 10) clockEl.classList.add("crit");
+      if (left % 8 === 0 || left <= 5) beep(300, 0.07, "sawtooth", 0.035);
+      else if (left % 3 === 0) beep(900, 0.03, "square", 0.012);
+
+      if (Math.random() < 0.55) {
+        var f = FILE_POOL[Math.floor(Math.random() * FILE_POOL.length)];
+        var li = document.createElement("li");
+        li.innerHTML = "<b>supprimé</b> " + f;
+        filesEl.appendChild(li);
+        while (filesEl.children.length > 6) filesEl.removeChild(filesEl.firstChild);
+      }
+
+      if (left <= 0) {
+        clearInterval(tick);
+        scenes.hack.classList.remove("alarm");
+        beep(520, 0.1, "triangle", 0.06);
+        later(function () { beep(780, 0.16, "triangle", 0.05); }, 120);
+        later(function () { show("end"); }, 700);
+      }
+    }, 1000);
+  }
+
+  /* ---------- 4. recommencer ---------- */
+  againBtn.addEventListener("click", function () {
+    clearTimers();
+    filesEl.innerHTML = "";
+    clockEl.textContent = "00:30";
+    clockEl.classList.remove("crit");
+    progEl.style.width = "0%";
+    giftBtn.classList.remove("opened");
+    show("gift");
+    giftBtn.addEventListener("click", function onClick() {
+      audio();
+      beep(660, 0.12, "triangle", 0.06);
+      giftBtn.classList.add("opened");
+      later(function () { show("term"); runTerminal(); }, 650);
+    }, { once: true });
+  });
+
+  /* si l'onglet est masqué, on ne laisse pas le compte à rebours dériver */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden && actx) actx.suspend();
+    else if (actx) actx.resume();
+  });
+})();
+</script>
+</body>
+</html>
